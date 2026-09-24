@@ -16,7 +16,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && esbuild src/index.ts src/server.ts src/client.ts src/tools.ts --bundle --splitting --platform=node --format=esm --target=node20 --outdir=dist --external:@modelcontextprotocol/sdk --external:zod && chmod +x dist/index.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json && esbuild src/index.ts src/server.ts src/client.ts src/tools.ts --bundle --splitting --platform=node --format=esm --target=node20 --outdir=dist --external:@modelcontextprotocol/sdk --external:zod && chmod +x dist/index.js",
     "start": "node dist/index.js",
     "smoke": "node scripts/smoke.mjs",
     "prepublishOnly": "npm run build"
