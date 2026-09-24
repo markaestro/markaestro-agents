@@ -26,8 +26,8 @@ export function clientFromEnv(env: Record<string, string | undefined> = process.
 export function buildServer(client: MarkaestroClient, options: ServerOptions = {}): McpServer {
   const server = new McpServer({ name: "markaestro", version: SERVER_VERSION }, {
     instructions: [
-      "Markaestro schedules and publishes social posts for one brand per API key.",
-      "Start with list_products, then list_destinations when a channel needs a destinationId.",
+      "Markaestro schedules and publishes social posts. A connection covers one brand or every brand in its workspace.",
+      "Start with list_products, then list_destinations when a channel needs a destinationId. If list_products returns several brands, pass productId when creating posts or Evergreen queues.",
       "create_post saves a draft unless scheduledAt is set. publish_post publishes now; ask the user before publishing anything public.",
       "Upload media with upload_media before referencing it. Read get_channel_rules for per-channel limits.",
       "Use preview_evergreen_queue before creating an Intelligent Evergreen queue, and get explicit confirmation before activation.",

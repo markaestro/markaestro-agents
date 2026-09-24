@@ -9,20 +9,20 @@
     "source": "github",
     "subfolder": "mcp"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@markaestro/mcp",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "MARKAESTRO_API_KEY",
-          "description": "Workspace API key (mk_live_ or mk_test_) from Settings, API Access. Bound to one brand.",
+          "description": "Workspace API key (mk_live_ or mk_test_) from Settings, API Access. Covers one brand or all brands in the workspace.",
           "isRequired": true,
           "isSecret": true
         },

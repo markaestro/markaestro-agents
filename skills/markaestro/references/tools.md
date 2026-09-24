@@ -9,7 +9,10 @@ and a hint. Ids are opaque strings; copy them exactly.
 **`get_channel_rules`** `{}` → `{ rules, keyMode: "live" | "test", baseUrl }`
 
 **`list_products`** `{}` → `{ products: [{ id, name, channels: [...] }], count }`
-The list has one entry: the brand this key is bound to.
+One entry for a single-brand connection; every brand in the workspace for an
+all-brands connection, which then passes `productId` to `create_post`,
+`create_posts`, `list_posts`, `create_evergreen_queue`, and (to report on one
+brand rather than the workspace) `get_analytics` and `list_post_analytics`.
 
 **`list_destinations`** `{ productId }` →
 `{ destinations: [{ id, channel, provider, label, deliveryMode, ... }], count }`

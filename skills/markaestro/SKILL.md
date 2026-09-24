@@ -8,8 +8,8 @@ description: Schedule, publish, and review social posts through Markaestro (Face
 Markaestro is a social publishing workspace. Agents reach it through the
 Markaestro MCP server (preferred) or the public API at `/api/public/v1`.
 The hosted MCP server signs the user in through the browser (OAuth) and
-receives a key bound to exactly one brand; the REST API takes that same
-kind of key as a bearer token.
+receives a key scoped at consent to one brand or to every brand in the
+workspace; the REST API takes that same kind of key as a bearer token.
 
 Tool-by-tool inputs and example outputs are in
 [references/tools.md](references/tools.md). Delivery modes, post statuses,
@@ -21,7 +21,7 @@ Read those when you need an exact field name.
 1. Confirm the MCP server is connected: a `list_products` tool should be
    available. If it is not, the fix depends on the client you are running
    in. Never ask the user for an API key when the client can open a browser;
-   the sign-in hands the client a key bound to one brand.
+   the sign-in hands the client a key scoped to the brands the user picks.
    - Installed but not signed in (a 401 or "needs authentication" state):
      Claude Code: run `/mcp`, pick `markaestro`, finish the sign-in.
      Cursor: Cursor Settings, Tools & MCP, click Markaestro (Needs login).
@@ -44,10 +44,18 @@ Read those when you need an exact field name.
 2. Call `get_channel_rules` once per session. It returns the per-channel
    rules and `keyMode`. If `keyMode` is `test`, say so when reporting
    results: test keys never reach a real platform.
-3. Call `list_products`. The brand in the answer is the only one this
-   connection can act on. If the user names a different brand, they
-   reconnect from their client (Claude Code: `/mcp`, sign out, sign in)
-   and pick that brand at consent, or use that brand's key.
+3. Call `list_products`. The brands in the answer are the ones this
+   connection can act on: one for a single-brand connection, every brand
+   in the workspace for an all-brands one.
+   - Several brands: pass `productId` to `create_post`, `create_posts`,
+     `list_posts`, and `create_evergreen_queue`, and to `get_analytics` or
+     `list_post_analytics` to report on one brand (without it they cover
+     the whole workspace). Confirm the brand with the user when the
+     request does not name one.
+   - One brand: every call uses it; `productId` can be left out.
+   - The user names a brand that is not listed: they reconnect from their
+     client (Claude Code: `/mcp`, sign out, sign in) and pick that brand,
+     or All brands, at consent.
 
 ## The posting model
 

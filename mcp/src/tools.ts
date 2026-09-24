@@ -14,6 +14,9 @@ const deliveryMode = z.enum(DELIVERY_MODES).describe(
   "direct_publish: official platform API. manual_reminder: a timed reminder for a person to post natively (default on facebook, instagram, tiktok). platform_inbox: TikTok inbox handoff. Required when scheduling facebook, instagram, or tiktok.",
 );
 const isoDate = z.string().describe("ISO 8601 UTC timestamp, for example 2026-09-10T14:00:00Z");
+const brand = z.string().optional().describe(
+  "Brand id from list_products. Required when this connection covers all brands in the workspace; a single-brand connection always uses its own brand and may omit it.",
+);
 
 const target = z.object({
   channel,
@@ -50,7 +53,7 @@ export const CHANNEL_RULES = `Markaestro channel rules (one post targets one or 
 Caption limits: facebook 63206, linkedin 3000, instagram 2200, tiktok 2200, pinterest 500, threads 500, x 280.
 Media: image/png, image/jpeg, image/webp, image/gif up to 10 MB; video/mp4, video/quicktime, video/webm up to 250 MB.
 Posting model: create_post stores a draft unless scheduledAt is set (then the worker publishes at that time). publish_post queues an immediate publish and returns a job run to poll with get_job_run.
-Every API key is bound to one brand (product). To act on another brand, use its own key.`;
+A connection covers either one brand (product) or every brand in the workspace, chosen when it was created. On an all-brands connection, pass productId to create_post, create_posts, list_posts, and create_evergreen_queue.`;
 
 export function createTools(client: MarkaestroClient): ToolDefinition[] {
   const get = <T>(path: string, query?: Record<string, string | number | undefined>) => client.request<T>("GET", path, undefined, query);
@@ -59,7 +62,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "list_products",
       title: "List brands",
-      description: "List the brand (product) this API key is bound to, with its connected channels. Call this first to learn the productId and which channels can be posted to.",
+      description: "List the brands (products) this connection can act on, with their connected channels: one brand for a single-brand connection, every brand in the workspace for an all-brands one. Call this first to learn each productId and which channels can be posted to.",
       inputSchema: {},
       readOnly: true,
       handler: () => get("/api/public/v1/products"),
@@ -77,14 +80,16 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "list_posts",
       title: "List posts",
-      description: "List this brand's posts, newest first. Filter by status: draft, scheduled, publishing, published, platform_action_required, failed, partial_failed. Use cursor from a previous page to continue.",
+      description: "List posts, newest first. Filter by status: draft, scheduled, publishing, published, platform_action_required, failed, partial_failed. On an all-brands connection, pass productId to list one brand. Use cursor from a previous page to continue.",
       inputSchema: {
+        productId: brand,
         status: z.string().optional(),
         limit: z.number().int().min(1).max(100).optional().describe("Default 25, max 100"),
         cursor: z.string().optional(),
       },
       readOnly: true,
-      handler: ({ status, limit, cursor }) => get("/api/public/v1/posts", {
+      handler: ({ productId, status, limit, cursor }) => get("/api/public/v1/posts", {
+        productId: productId as string | undefined,
         status: status as string | undefined,
         limit: limit as number | undefined,
         cursor: cursor as string | undefined,
@@ -103,6 +108,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       title: "Create a post",
       description: `Create a post for this brand. Without scheduledAt the post is saved as a DRAFT and nothing is published; with scheduledAt it is scheduled and the worker publishes it at that time. Pass either a single channel or a targets array (one entry per channel). Upload media first with upload_media and pass the asset ids. Read channel rules with get_channel_rules before posting.`,
       inputSchema: {
+        productId: brand,
         caption: z.string().max(63206).default("").describe("Post text. Required on linkedin."),
         channel: channel.optional().describe("Single channel. Mutually exclusive with targets."),
         targets: z.array(target).min(1).max(7).optional().describe("Several channels at once, each with its own destination and delivery mode."),
@@ -116,7 +122,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       openWorld: true,
       handler: async (args) => {
         const body: Record<string, unknown> = {};
-        for (const key of ["caption", "channel", "targets", "mediaAssetIds", "scheduledAt", "destinationId", "deliveryMode", "settings"]) {
+        for (const key of ["productId", "caption", "channel", "targets", "mediaAssetIds", "scheduledAt", "destinationId", "deliveryMode", "settings"]) {
           if (args[key] !== undefined) body[key] = args[key];
         }
         const result = await client.request<{ post: Record<string, unknown> }>("POST", "/api/public/v1/posts", body);
@@ -180,6 +186,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Create up to 25 posts in one call, for example a week of scheduled content. Each item takes the same fields as create_post. Failures are per item: the response lists ok/error for each, and the successful ones are created even when others fail.",
       inputSchema: {
         posts: z.array(z.object({
+          productId: brand,
           caption: z.string().max(63206).default(""),
           channel: channel.optional(),
           targets: z.array(target).min(1).max(7).optional(),
@@ -231,6 +238,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Create a draft Evergreen queue from an eligible published post. Creation does not activate it; call activate_evergreen_queue only after the user confirms the cadence and review policy.",
       inputSchema: {
         sourcePostId: z.string(),
+        productId: brand,
         name: z.string().min(1).max(120),
         channels: z.array(channel).min(1).max(7).optional(),
         intervalDays: z.number().int().min(7).max(365).default(30),
@@ -319,7 +327,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "get_analytics",
       title: "Get brand analytics",
-      description: "The brand's performance over a window: totals with the prior period for deltas, per-channel rollups, daily series, engagement breakdown, follower trend, top posts, posting-time heatmap, content-type averages, computed insights, and coverage. Covers the whole account: posts published through Markaestro and posts published directly on the platform (discovered from the connected account); coverage.bySource says how many of each. Read this before recommending what, when, or where to post. The window is clamped to the plan's history (the response reports maxDays). Unavailable provider metrics are null, not zero.",
+      description: "Performance over a window for the connection's brand, or on an all-brands connection for the workspace or the one brand named by productId: totals with the prior period for deltas, per-channel rollups, daily series, engagement breakdown, follower trend, top posts, posting-time heatmap, content-type averages, computed insights, and coverage. Covers the whole account: posts published through Markaestro and posts published directly on the platform (discovered from the connected account); coverage.bySource says how many of each. Read this before recommending what, when, or where to post. The window is clamped to the plan's history (the response reports maxDays). Unavailable provider metrics are null, not zero.",
       inputSchema: {
         days: z.number().int().min(1).max(365).optional().describe("Preset window ending today (UTC); default 28"),
         since: z.string().optional().describe("Explicit range start, YYYY-MM-DD (UTC); needs until"),
@@ -327,9 +335,11 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         channel: channel.optional().describe("Restrict every number to one channel"),
         source: z.enum(["markaestro", "native"]).optional().describe("Only posts published through Markaestro, or only posts published directly on the platform; omit for the whole account"),
         tz: z.number().int().min(-840).max(840).optional().describe("Viewer timezone offset in minutes east of UTC; shapes the heatmap only"),
+        productId: z.string().optional().describe("One brand, on an all-brands connection; omit for the whole workspace. A single-brand connection always reports its own brand."),
       },
       readOnly: true,
-      handler: ({ days, since, until, channel: ch, source, tz }) => get("/api/public/v1/analytics", {
+      handler: ({ days, since, until, channel: ch, source, tz, productId }) => get("/api/public/v1/analytics", {
+        productId: productId as string | undefined,
         days: days as number | undefined,
         since: since as string | undefined,
         until: until as string | undefined,
@@ -341,7 +351,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "list_post_analytics",
       title: "List post analytics",
-      description: "Every post of the brand in the window with its latest metrics (views, reach, likes, comments, shares, saves, clicks, engagements, engagement rate), one row per post, sorted. Includes posts published directly on the platform; each row's source says markaestro or native, and canTakeDown says whether delete_post can remove the live copy (false on Instagram and TikTok). Use sort=engagements or sort=views to find what worked; sort=published_at (default) for a chronological read. Pair with get_post for the full caption and media of a Markaestro post (native posts have externalUrl instead).",
+      description: "Every post in the window (the connection's brand, or on an all-brands connection the workspace or the brand named by productId) with its latest metrics (views, reach, likes, comments, shares, saves, clicks, engagements, engagement rate), one row per post, sorted. Includes posts published directly on the platform; each row's source says markaestro or native, and canTakeDown says whether delete_post can remove the live copy (false on Instagram and TikTok). Use sort=engagements or sort=views to find what worked; sort=published_at (default) for a chronological read. Pair with get_post for the full caption and media of a Markaestro post (native posts have externalUrl instead).",
       inputSchema: {
         days: z.number().int().min(1).max(365).optional().describe("Preset window ending today (UTC); default 28"),
         since: z.string().optional().describe("Explicit range start, YYYY-MM-DD (UTC); needs until"),
@@ -350,9 +360,11 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         source: z.enum(["markaestro", "native"]).optional().describe("Only posts published through Markaestro, or only posts published directly on the platform; omit for the whole account"),
         sort: z.enum(["published_at", "views", "reach", "engagements", "engagement_rate"]).optional().describe("Descending; default published_at"),
         limit: z.number().int().min(1).max(500).optional().describe("Default 100"),
+        productId: z.string().optional().describe("One brand, on an all-brands connection; omit for the whole workspace. A single-brand connection always reports its own brand."),
       },
       readOnly: true,
-      handler: ({ days, since, until, channel: ch, source, sort, limit }) => get("/api/public/v1/analytics/posts", {
+      handler: ({ days, since, until, channel: ch, source, sort, limit, productId }) => get("/api/public/v1/analytics/posts", {
+        productId: productId as string | undefined,
         days: days as number | undefined,
         since: since as string | undefined,
         until: until as string | undefined,

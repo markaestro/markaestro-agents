@@ -7,15 +7,18 @@ through the public API. Exact connection steps per client are on
 https://markaestro.com/developers/agents (`?client=cursor`, `chatgpt`, `grok`,
 `grok-bot`, `openclaw`, `hermes`, or `headless` opens that tab).
 
-One API key, one brand: every Markaestro key is bound to a single brand, so the
-server operates on that brand only. Run one server per brand if an agent needs
-several.
+Every key covers either one brand or every brand in its workspace, chosen
+when the key is created or at the sign-in consent. A single-brand key works on
+that brand alone. An all-brands key sees every brand: `list_products` returns
+them all, and the agent passes `productId` to `create_post`, `create_posts`,
+`list_posts`, and `create_evergreen_queue`, and to the analytics tools to
+report on one brand instead of the whole workspace.
 
 ## Tools
 
 | Tool | What it does |
 | --- | --- |
-| `list_products` | The brand this key is bound to and its connected channels |
+| `list_products` | The brands this key can act on (one, or all in the workspace) and their connected channels |
 | `list_destinations` | Publishable destinations of the brand (pages, accounts) with ids |
 | `list_posts`, `get_post` | Read posts by status, page through with `cursor` |
 | `create_post` | Save a draft, or schedule when `scheduledAt` is set |

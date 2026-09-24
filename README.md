@@ -44,16 +44,22 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
 
 ## Safety
 
-- Every connection is bound to one brand, chosen by the user at sign-in.
+- The user scopes every connection at sign-in: one brand, or all brands in
+  the workspace. A single-brand connection cannot reach any other brand; an
+  all-brands connection names the brand on each post it creates.
 - `create_post` saves a draft unless `scheduledAt` is set. `publish_post` is
-  the only tool that publishes now, and the skill tells the agent to ask first.
-- Every write tool is annotated `destructiveHint`, so Claude asks before each one.
+  the only tool that publishes immediately; scheduling (`scheduledAt`,
+  `bulk_posts`, activating an Evergreen queue) sets up future publishes. The
+  skill tells the agent to ask the user before `publish_post`, before
+  activating an Evergreen queue, and before deleting a post from a platform.
+- Every write tool is annotated `destructiveHint`, so clients that honor tool
+  annotations, Claude among them, ask for confirmation before each call.
 - Connected agents are listed and revoked in Markaestro under Settings, API.
 
 ## Privacy Policy
 
 Markaestro processes the posts, media, and analytics the agent reads or
-writes for the connected brand, and nothing from the conversation beyond each
+writes for the brands the connection covers, and nothing from the conversation beyond each
 tool call's arguments. See the [Privacy Policy](https://markaestro.com/privacy)
 for what is collected, how it is used and retained, who it is shared with,
 and how to contact us. [Terms of Service](https://markaestro.com/terms).
