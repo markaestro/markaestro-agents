@@ -1,0 +1,61 @@
+{
+  "name": "@markaestro/mcp",
+  "version": "0.2.1",
+  "mcpName": "com.markaestro/mcp",
+  "description": "Model Context Protocol server that lets AI agents schedule, publish, and review Markaestro posts through the public API",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "markaestro-mcp": "dist/index.js"
+  },
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && esbuild src/index.ts src/server.ts src/client.ts src/tools.ts --bundle --splitting --platform=node --format=esm --target=node20 --outdir=dist --external:@modelcontextprotocol/sdk --external:zod && chmod +x dist/index.js",
+    "start": "node dist/index.js",
+    "smoke": "node scripts/smoke.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5",
+    "esbuild": "^0.25.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markaestro/markaestro-agents.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://markaestro.com/docs",
+  "bugs": {
+    "url": "https://github.com/markaestro/markaestro-agents/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "markaestro",
+    "social-media",
+    "scheduling",
+    "ai-agents"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./dist/server.js",
+    "./client": "./dist/client.js",
+    "./tools": "./dist/tools.js"
+  }
+}

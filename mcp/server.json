@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.markaestro/mcp",
+  "title": "Markaestro",
+  "description": "Schedule, publish, and review social posts and analytics for a Markaestro brand.",
+  "websiteUrl": "https://markaestro.com/developers/agents",
+  "repository": {
+    "url": "https://github.com/markaestro/markaestro-agents",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "version": "0.2.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@markaestro/mcp",
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MARKAESTRO_API_KEY",
+          "description": "Workspace API key (mk_live_ or mk_test_) from Settings, API Access. Bound to one brand.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "MARKAESTRO_READ_ONLY",
+          "description": "Set to 1 to register only the reading tools.",
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://markaestro.com/api/public/v1/mcp"
+    }
+  ]
+}

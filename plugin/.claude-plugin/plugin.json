@@ -1,0 +1,18 @@
+{
+  "name": "markaestro",
+  "version": "0.2.1",
+  "description": "Schedule, publish, and review social posts through Markaestro from any AI agent: the markaestro skill plus the hosted MCP server.",
+  "author": {
+    "name": "Aethos Solutions LLC",
+    "url": "https://markaestro.com"
+  },
+  "homepage": "https://markaestro.com/docs",
+  "repository": "https://github.com/markaestro/markaestro-agents",
+  "license": "MIT",
+  "keywords": [
+    "markaestro",
+    "social-media",
+    "scheduling",
+    "mcp"
+  ]
+}

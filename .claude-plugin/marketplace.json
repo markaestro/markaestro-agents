@@ -1,0 +1,19 @@
+{
+  "name": "markaestro",
+  "owner": {
+    "name": "Aethos Solutions LLC",
+    "url": "https://markaestro.com"
+  },
+  "metadata": {
+    "description": "Markaestro for AI agents: skill and hosted MCP server."
+  },
+  "plugins": [
+    {
+      "name": "markaestro",
+      "source": "./plugin",
+      "description": "Schedule, publish, and review social posts through Markaestro.",
+      "version": "0.2.1",
+      "category": "productivity"
+    }
+  ]
+}
