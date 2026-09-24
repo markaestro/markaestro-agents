@@ -182,7 +182,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "publish_post",
       title: "Publish a post now",
-      description: "Queue an immediate publish of a draft post. Returns a job run; poll get_job_run until status is succeeded or failed. For manual_reminder targets this queues a reminder for a person instead of calling the platform. Confirm with the user before publishing anything public.",
+      description: "Queue an immediate publish of a draft post. Returns a job run; poll get_job_run until status is succeeded or failed. For manual_reminder targets this queues a reminder for a person instead of calling the platform. The post goes public on the platform as soon as the run succeeds.",
       inputSchema: { postId: z.string() },
       readOnly: false,
       destructive: true,
@@ -192,7 +192,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "mark_post_posted",
       title: "Mark a post as posted",
-      description: "Record that a person has posted a manual-reminder or TikTok-inbox post natively, which moves it from platform_action_required to published. Only for posts in platform_action_required, and only after the user confirms they posted it. Nothing is sent to any platform.",
+      description: "Record that a person has posted a manual-reminder or TikTok-inbox post natively, which moves it from platform_action_required to published. Only for posts in platform_action_required that the user has already posted themselves. Nothing is sent to any platform.",
       inputSchema: {
         postId: z.string(),
         externalUrl: z.string().url().optional().describe("Link to the live post, if the user has it"),
@@ -299,7 +299,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "create_evergreen_queue",
       title: "Create an Evergreen queue",
-      description: "Create a draft Evergreen queue from an eligible published post. Creation does not activate it; call activate_evergreen_queue only after the user confirms the cadence and review policy.",
+      description: "Create a draft Evergreen queue from an eligible published post. Creation does not activate it or schedule anything; activate_evergreen_queue does that separately.",
       inputSchema: {
         sourcePostId: z.string(),
         productId: brand,
@@ -313,7 +313,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         reviewPolicy: z.enum(["approve_future_runs", "review_each_run"]).default("review_each_run"),
         expiresAt: isoDate.optional(),
         variants: z.array(z.object({ caption: z.string().min(1).max(63206), enabled: z.boolean().default(true) })).min(1).max(20),
-        contentConfirmed: z.boolean().optional().describe("Set true only after showing the user every caption variant and hearing them confirm the captions are accurate and still true. Activating or resuming a queue requires this confirmation."),
+        contentConfirmed: z.boolean().optional().describe("True records that the user has reviewed every caption variant and confirmed the captions are accurate and still true. Activating or resuming a queue requires this confirmation."),
       },
       readOnly: false,
       destructive: false,
@@ -335,7 +335,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         reviewPolicy: z.enum(["approve_future_runs", "review_each_run"]).optional(),
         expiresAt: isoDate.nullable().optional(),
         variants: z.array(z.object({ caption: z.string().min(1).max(63206), enabled: z.boolean().default(true) })).min(1).max(20).optional(),
-        contentConfirmed: z.boolean().optional().describe("Set true only after showing the user every caption variant and hearing them confirm the captions are accurate and still true. Activating or resuming a queue requires this confirmation."),
+        contentConfirmed: z.boolean().optional().describe("True records that the user has reviewed every caption variant and confirmed the captions are accurate and still true. Activating or resuming a queue requires this confirmation."),
       },
       readOnly: false,
       destructive: true,
@@ -345,7 +345,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "activate_evergreen_queue",
       title: "Activate an Evergreen queue",
-      description: "Activate a draft or paused queue. This schedules future public posts, so confirm with the user first. The user must have confirmed the caption variants (contentConfirmed on create_evergreen_queue or update_evergreen_queue); otherwise this answers EVERGREEN_CONTENT_REVIEW_REQUIRED.",
+      description: "Activate a draft or paused queue. This schedules future public posts. The user must have confirmed the caption variants (contentConfirmed on create_evergreen_queue or update_evergreen_queue); otherwise this answers EVERGREEN_CONTENT_REVIEW_REQUIRED.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
       destructive: false,
