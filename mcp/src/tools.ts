@@ -502,7 +502,8 @@ export function describeError(error: unknown): string {
     if (error.status === 401) lines.push("Check MARKAESTRO_API_KEY: the key is missing, revoked, expired, or in the wrong mode.");
     if (error.status === 403) lines.push("The key lacks the scope for this call. Create a key with the needed scopes under Settings > API Access.");
     if (error.status === 402) lines.push("The workspace hit a plan limit or has no active subscription.");
-    if (error.requestId) lines.push(`requestId ${error.requestId}`);
+    // requestId stays on the error object for logs but is not shown to the
+    // model: directory rules bar diagnostic identifiers in tool responses.
     return lines.join("\n");
   }
   return error instanceof Error ? error.message : String(error);

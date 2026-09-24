@@ -60,8 +60,9 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
 
 Markaestro processes the posts, media, and analytics the agent reads or
 writes for the brands the connection covers, and nothing from the conversation beyond each
-tool call's arguments. See the [Privacy Policy](https://markaestro.com/privacy)
-for what is collected, how it is used and retained, who it is shared with,
+tool call's arguments. Section 7 of the [Privacy Policy](https://markaestro.com/privacy),
+"AI agents and connected apps", covers agent connections specifically; the
+policy as a whole explains what is collected, how it is used and retained, who it is shared with,
 and how to contact us. [Terms of Service](https://markaestro.com/terms).
 
 ## Support
