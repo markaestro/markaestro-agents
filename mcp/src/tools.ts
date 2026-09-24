@@ -392,7 +392,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "list_post_analytics",
       title: "List post analytics",
-      description: "Every post in the window (the connection's brand, or on an all-brands connection the workspace or the brand named by productId) with its latest metrics (views, reach, likes, comments, shares, saves, clicks, engagements, engagement rate), one row per post, sorted. Includes posts published directly on the platform; each row's source says markaestro or native, and canTakeDown says whether delete_post can remove the live copy (false on Instagram and TikTok). Use sort=engagements or sort=views to find what worked; sort=published_at (default) for a chronological read. Pair with get_post for the full caption and media of a Markaestro post (native posts have externalUrl instead).",
+      description: "Every post in the window (the connection's brand, or on an all-brands connection the workspace or the brand named by productId) with its latest metrics (views, reach, likes, comments, shares, saves, clicks, engagements, engagement rate), one row per post, sorted. Includes posts published directly on the platform; each row's source says markaestro or native (canTakeDown is informational: taking a live post down is done by the user in Markaestro, not by delete_post). Use sort=engagements or sort=views to find what worked; sort=published_at (default) for a chronological read. Pair with get_post for the full caption and media of a Markaestro post (native posts have externalUrl instead).",
       inputSchema: {
         days: z.number().int().min(1).max(365).optional().describe("Preset window ending today (UTC); default 28"),
         since: z.string().optional().describe("Explicit range start, YYYY-MM-DD (UTC); needs until"),
@@ -550,7 +550,8 @@ export function describeError(error: unknown): string {
     }
     if (error.retryAfterSeconds) lines.push(`Retry after ${error.retryAfterSeconds} seconds.`);
     if (error.status === 401) lines.push("Check MARKAESTRO_API_KEY: the key is missing, revoked, expired, or in the wrong mode.");
-    if (error.status === 403) lines.push("The key lacks the scope for this call. Create a key with the needed scopes under Settings > API Access.");
+    if (error.status === 403 && error.code === "FORBIDDEN_AGENT_CONNECTION") lines.push("Connected agents manage social media only. Ask the user to do this in Markaestro.");
+    else if (error.status === 403) lines.push("The key lacks the scope for this call. Create a key with the needed scopes under Settings > API Access.");
     if (error.status === 402) lines.push("The workspace hit a plan limit or has no active subscription.");
     // requestId stays on the error object for logs but is not shown to the
     // model: directory rules bar diagnostic identifiers in tool responses.

@@ -47,8 +47,11 @@ The Evergreen tools (`preview_`, `create_`, `get_`, `list_`, `update_`,
 Agents manage social media and nothing else: account settings, billing,
 team, API keys, webhooks, and channel connections are not exposed, and no
 tool deletes a published post, takes one down from a platform, or archives
-an Evergreen queue. Those stay with the user in Markaestro. The REST API
-still offers deletes and webhooks to integrations holding a key.
+an Evergreen queue. Those stay with the user in Markaestro. The same rule
+holds at the REST layer for a key issued through the agent sign-in: it
+cannot remove a published post, take one down from a platform, or manage
+webhooks (`FORBIDDEN_AGENT_CONNECTION`). A key a person mints in Settings
+keeps the full REST surface its scopes allow.
 
 Also served: the `markaestro://channel-rules` resource and a `schedule_post`
 prompt that walks an agent through a safe scheduling flow.

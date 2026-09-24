@@ -50,7 +50,9 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
 - Agents manage social media, not the account: no tool reaches account
   settings, billing, team members, API keys, webhooks, or channel
   connections, and none deletes a published post, takes one down from a
-  platform, or archives an Evergreen queue.
+  platform, or archives an Evergreen queue. The key issued at the agent
+  sign-in carries the same limits at the REST layer, so they hold whichever
+  client holds the token.
 - `create_post` saves a draft unless `scheduledAt` is set. `publish_post` is
   the only tool that publishes immediately; scheduling (`scheduledAt`,
   `bulk_posts`, activating an Evergreen queue) sets up future publishes. The
