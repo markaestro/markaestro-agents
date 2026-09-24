@@ -65,11 +65,3 @@ toggles.
 ```json
 { "__type": "x", "replySettings": "following" | "mentionedUsers" | "subscribers" | "verified" }
 ```
-
-## Webhook events
-
-`post.publish.queued`, `post.published`, `post.action_required`,
-`post.failed`, `evergreen.queue.activated`, `evergreen.queue.paused`,
-`evergreen.queue.needs_review`, `evergreen.run.scheduled`,
-`evergreen.run.skipped`, and `evergreen.run.underperformed`. Deliveries are signed with HMAC-SHA256 over
-`<timestamp>.<raw body>` in `X-Markaestro-Signature`.

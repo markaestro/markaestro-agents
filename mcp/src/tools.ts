@@ -55,6 +55,13 @@ Media: image/png, image/jpeg, image/webp, image/gif up to 10 MB; video/mp4, vide
 Posting model: create_post stores a draft unless scheduledAt is set (then the worker publishes at that time). publish_post queues an immediate publish and returns a job run to poll with get_job_run.
 A connection covers either one brand (product) or every brand in the workspace, chosen when it was created. On an all-brands connection, pass productId to create_post, create_posts, list_posts, and create_evergreen_queue.`;
 
+/**
+ * What an agent may delete: posts that have not reached any platform.
+ * Published posts, and taking anything down from a platform, stay with the
+ * user in Markaestro.
+ */
+const AGENT_DELETABLE_STATUSES = new Set(["draft", "scheduled", "failed", "platform_action_required"]);
+
 export function createTools(client: MarkaestroClient): ToolDefinition[] {
   const get = <T>(path: string, query?: Record<string, string | number | undefined>) => client.request<T>("GET", path, undefined, query);
 
@@ -76,6 +83,14 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       },
       readOnly: true,
       handler: ({ productId }) => get(`/api/public/v1/products/${encodeURIComponent(String(productId))}/destinations`),
+    },
+    {
+      name: "get_brand_profile",
+      title: "Get a brand profile",
+      description: "A brand's description, website, categories, voice, and visual identity as set in Markaestro. Read it before writing captions so they sound like the brand. Read-only.",
+      inputSchema: { productId: z.string().describe("Brand id from list_products") },
+      readOnly: true,
+      handler: ({ productId }) => get(`/api/public/v1/products/${encodeURIComponent(String(productId))}/profile`),
     },
     {
       name: "list_posts",
@@ -102,6 +117,25 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       inputSchema: { postId: z.string() },
       readOnly: true,
       handler: ({ postId }) => get(`/api/public/v1/posts/${encodeURIComponent(String(postId))}`),
+    },
+    {
+      name: "update_post",
+      title: "Edit a draft or scheduled post",
+      description: "Change a draft or scheduled post: its caption, its media, one channel's settings (settings.__type names the channel), or, for a scheduled post, its time. Omitted fields stay as they are. Every change is checked against the rules of every channel the post targets, and a scheduled post must still be publishable afterwards. Published and failed posts cannot be edited. Channels are fixed once a post exists; to post somewhere else, create a new post.",
+      inputSchema: {
+        postId: z.string(),
+        caption: z.string().max(63206).optional(),
+        mediaAssetIds: z.array(z.string()).max(35).optional().describe("Replaces the post's media, in display order"),
+        settings: z.record(z.string(), z.unknown()).optional().describe("One channel's platform settings, with __type equal to that channel"),
+        scheduledAt: isoDate.optional().describe("New time for a scheduled post"),
+      },
+      readOnly: false,
+      openWorld: true,
+      handler: ({ postId, ...fields }) => {
+        const body: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(fields)) if (value !== undefined) body[key] = value;
+        return client.request("PATCH", `/api/public/v1/posts/${encodeURIComponent(String(postId))}`, body);
+      },
     },
     {
       name: "create_post",
@@ -145,29 +179,44 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       handler: ({ postId }) => client.request("POST", `/api/public/v1/posts/${encodeURIComponent(String(postId))}/publish`),
     },
     {
-      name: "delete_post",
-      title: "Delete a post",
-      description: "Delete a draft, cancel a scheduled post, or take a post down. Without platform, a published Markaestro post is only removed from Markaestro and the live copy stays up; with platform: true it is first taken down from every channel it went to and the record goes only once every live copy is gone. A post published directly on the platform (an analytics id with source native) is always taken down from the platform, since that is all there is to delete. Instagram and TikTok offer no delete to apps: a takedown skips those channels and lists them under platform.skipped, and a native post there is refused; check canTakeDown on the analytics row before offering. Taking a live post down needs the posts.publish scope. Posts mid-publish cannot be deleted until the run settles.",
+      name: "mark_post_posted",
+      title: "Mark a post as posted",
+      description: "Record that a person has posted a manual-reminder or TikTok-inbox post natively, which moves it from platform_action_required to published. Only for posts in platform_action_required, and only after the user confirms they posted it. Nothing is sent to any platform.",
       inputSchema: {
-        postId: z.string().describe("A Markaestro post id, or the id of a native post from list_post_analytics"),
-        platform: z.boolean().optional().describe("Also take a published Markaestro post down from its platforms; implied for a native post"),
+        postId: z.string(),
+        externalUrl: z.string().url().optional().describe("Link to the live post, if the user has it"),
       },
       readOnly: false,
-      openWorld: true,
-      handler: ({ postId, platform }) => client.request(
-        "DELETE",
-        `/api/public/v1/posts/${encodeURIComponent(String(postId))}`,
-        undefined,
-        platform ? { platform: "true" } : undefined,
+      handler: ({ postId, externalUrl }) => client.request(
+        "POST",
+        `/api/public/v1/posts/${encodeURIComponent(String(postId))}/mark-posted`,
+        externalUrl ? { externalUrl } : {},
       ),
     },
     {
+      name: "delete_post",
+      title: "Delete a draft or cancel a post",
+      description: "Delete a draft, or cancel a scheduled, failed, or waiting-to-be-posted post before it reaches any platform. Published posts cannot be deleted or taken down from here: that stays with the user in Markaestro. Posts mid-publish cannot be deleted until the run settles.",
+      inputSchema: {
+        postId: z.string().describe("A Markaestro post id"),
+      },
+      readOnly: false,
+      handler: async ({ postId }) => {
+        const id = encodeURIComponent(String(postId));
+        const { post } = await get<{ post: { status?: string } }>(`/api/public/v1/posts/${id}`);
+        if (!AGENT_DELETABLE_STATUSES.has(String(post.status))) {
+          throw new Error(`This post is ${post.status}. Agents can delete drafts and cancel posts that have not reached a platform; ask the user to remove a published post in Markaestro.`);
+        }
+        return client.request("DELETE", `/api/public/v1/posts/${id}`);
+      },
+    },
+    {
       name: "bulk_posts",
-      title: "Reschedule, delete, or restatus posts",
-      description: "Apply one action to up to 25 posts: reschedule (needs scheduledAt), delete, or status (draft or scheduled). Per-post failures are reported individually.",
+      title: "Reschedule or restatus posts",
+      description: "Apply one action to up to 25 posts: reschedule (needs scheduledAt), or status (draft or scheduled). Per-post failures are reported individually. To remove posts, use delete_post on each draft.",
       inputSchema: {
         ids: z.array(z.string()).min(1).max(25),
-        action: z.enum(["reschedule", "delete", "status"]),
+        action: z.enum(["reschedule", "status"]),
         scheduledAt: isoDate.optional().describe("Required for reschedule"),
         status: z.enum(["draft", "scheduled"]).optional().describe("Required for the status action"),
       },
@@ -301,14 +350,6 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/resume`),
     },
     {
-      name: "archive_evergreen_queue",
-      title: "Archive an Evergreen queue",
-      description: "Archive a queue permanently and unschedule its pending occurrence.",
-      inputSchema: { queueId: z.string() },
-      readOnly: false,
-      handler: ({ queueId }) => client.request("DELETE", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}`),
-    },
-    {
       name: "list_evergreen_runs",
       title: "List Evergreen runs",
       description: "List the generated occurrences and evaluation outcomes for a queue.",
@@ -383,6 +424,35 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       handler: ({ postId }) => get(`/api/public/v1/analytics/posts/${encodeURIComponent(String(postId))}/history`),
     },
     {
+      name: "refresh_analytics",
+      title: "Refresh analytics from the platforms",
+      description: "Pull live metrics from the platforms now instead of waiting for the next scheduled poll: posts in the window (optionally one channel, or one brand on an all-brands connection) and today's follower counts. The answer says how many posts were updated and how many remain, since a large window may take more than one refresh. Limited to a few calls a minute.",
+      inputSchema: {
+        days: z.number().int().min(1).max(90).optional().describe("Window ending now; default 28"),
+        channel: channel.optional(),
+        productId: z.string().optional().describe("One brand, on an all-brands connection"),
+      },
+      readOnly: false,
+      openWorld: true,
+      handler: ({ days, channel: ch, productId }) => {
+        const body: Record<string, unknown> = {};
+        if (days !== undefined) body.days = days;
+        if (ch !== undefined) body.channel = ch;
+        if (productId !== undefined) body.productId = productId;
+        return client.request("POST", "/api/public/v1/analytics/refresh", body);
+      },
+    },
+    {
+      name: "suggest_post_times",
+      title: "Suggest times to post",
+      description: "When this brand's audience responds best, learned by Markaestro Intelligence from the brand's own post history (not an industry table). timing is null until there is enough history; readiness says how much there is. Use it to pick scheduledAt. Needs a plan with Intelligence.",
+      inputSchema: {
+        productId: z.string().optional().describe("Required on an all-brands connection; a single-brand connection uses its own brand"),
+      },
+      readOnly: true,
+      handler: ({ productId }) => get("/api/public/v1/analytics/best-times", { productId: productId as string | undefined }),
+    },
+    {
       name: "upload_media",
       title: "Upload media",
       description: "Upload an image or video from a local file path, an http(s) URL, or a data: URL. Returns the media asset; pass its id in create_post mediaAssetIds. Counts against the workspace's monthly upload quota.",
@@ -450,43 +520,23 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       }),
     },
     {
-      name: "list_webhook_endpoints",
-      title: "List webhook endpoints",
-      description: "List the webhook endpoints registered for this workspace (needs the webhooks.manage scope).",
-      inputSchema: {},
-      readOnly: true,
-      handler: () => get("/api/public/v1/webhook-endpoints"),
-    },
-    {
-      name: "create_webhook_endpoint",
-      title: "Register a webhook endpoint",
-      description: "Register an HTTPS endpoint for post.publish.queued, post.published, post.action_required, or post.failed events. The signing secret is returned once; store it.",
-      inputSchema: {
-        url: z.string().url(),
-        events: z.array(z.enum([
-          "post.publish.queued",
-          "post.published",
-          "post.action_required",
-          "post.failed",
-          "evergreen.queue.activated",
-          "evergreen.queue.paused",
-          "evergreen.queue.needs_review",
-          "evergreen.run.scheduled",
-          "evergreen.run.skipped",
-          "evergreen.run.underperformed",
-        ])).min(1).max(10),
-      },
-      readOnly: false,
-      openWorld: true,
-      handler: ({ url, events }) => client.request("POST", "/api/public/v1/webhook-endpoints", { url, events }),
-    },
-    {
       name: "get_channel_rules",
       title: "Channel rules",
       description: "The per-channel media, caption, and delivery-mode rules the API enforces, plus the draft-then-publish model. Read before creating posts.",
       inputSchema: {},
       readOnly: true,
       handler: async () => ({ rules: CHANNEL_RULES, keyMode: client.isTestKey ? "test" : "live", baseUrl: client.baseUrl }),
+    },
+    {
+      name: "get_tiktok_posting_options",
+      title: "Get TikTok posting options",
+      description: "The connected TikTok creator's live posting options: allowed privacy levels, whether comments, duets, and stitches can be enabled, and the longest video. TikTok requires a Direct Post to use these, so read them right before building one and pass the chosen privacyLevel in the tiktok settings. Test keys get a sandbox answer.",
+      inputSchema: {
+        productId: z.string().optional().describe("On an all-brands connection, the brand whose TikTok account to ask about"),
+      },
+      readOnly: true,
+      openWorld: true,
+      handler: ({ productId }) => get("/api/public/v1/tiktok/creator-info", { productId: productId as string | undefined }),
     },
   ];
 }

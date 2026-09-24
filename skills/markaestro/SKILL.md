@@ -1,6 +1,6 @@
 ---
 name: markaestro
-description: Schedule, publish, and review social posts through Markaestro (Facebook, Instagram, TikTok, Threads, Pinterest, LinkedIn, X), read brand and per-post analytics, and manage Intelligent Evergreen queues using its MCP server or public API. Use when a task mentions Markaestro, posting or scheduling to a connected social account, uploading media for a post, checking whether a post published or how it performed, reporting on social performance, deciding what or when to post next, batch-scheduling content, managing proven recurring content, or wiring webhooks for post events.
+description: Schedule, publish, and review social posts through Markaestro (Facebook, Instagram, TikTok, Threads, Pinterest, LinkedIn, X), read brand and per-post analytics, and manage Intelligent Evergreen queues using its MCP server or public API. Use when a task mentions Markaestro, posting or scheduling to a connected social account, uploading media for a post, checking whether a post published or how it performed, reporting on social performance, deciding what or when to post next, batch-scheduling or editing scheduled content, refreshing analytics, finding the best time to post, writing in a brand's voice, or managing proven recurring content.
 ---
 
 # Working with Markaestro
@@ -76,6 +76,24 @@ Read those when you need an exact field name.
   `deliveryMode`. Platform `settings` may ride on one target only.
 - A week of content: `create_posts` takes up to 25 items in one call and
   reports success or failure per item. Check every `ok` before summarizing.
+- To change a draft or scheduled post, `update_post` edits its caption,
+  media, one channel's `settings`, or (scheduled only) its time; omitted
+  fields stay as they are. Published and failed posts cannot be edited, and
+  channels are fixed once a post exists.
+- Before writing captions, read `get_brand_profile {productId}` for the
+  brand's voice and identity. Before picking a time, `suggest_post_times`
+  gives the brand's best windows, learned from its own history (null until
+  there is enough; then fall back to asking the user).
+- TikTok Direct Post: call `get_tiktok_posting_options` first and use one of
+  its `privacyLevelOptions` in the tiktok `settings`.
+
+## What agents cannot do
+
+Account settings, billing, team members, API keys, and connecting or
+disconnecting social accounts are not available to agents; send the user to
+Markaestro for those. Agents also cannot delete a published post or take one
+down from a platform, and cannot archive an Evergreen queue: say so and
+point the user to Markaestro rather than looking for another way.
 
 ## Media
 
@@ -98,7 +116,8 @@ get_post {postId}                   -> confirm status and scheduledAt
 ```
 
 Report back the post id, status, channels, and the UTC schedule. Mention that
-the user can change or cancel it in Markaestro or with `delete_post`.
+it can be edited with `update_post` or cancelled with `delete_post` until it
+publishes.
 
 ## Reading the schedule
 
@@ -106,7 +125,8 @@ the user can change or cancel it in Markaestro or with `delete_post`.
   `platform_action_required`, and `draft` cover the rest.
 - `platform_action_required` means a person must finish the post: TikTok inbox
   handoff, or a manual reminder. Say what the next action is; do not treat it
-  as failed.
+  as failed. Once the user confirms they posted it, `mark_post_posted` (with
+  the live link if they have it) records it as published.
 - `partial_failed` means some targets published and some did not. Read
   `publishResults` on the post before retrying anything.
 
@@ -124,13 +144,12 @@ the user can change or cancel it in Markaestro or with `delete_post`.
   `"views"` finds what worked; `get_post` has the full caption and media
   for a Markaestro row, and `externalUrl` opens a native one. Pass
   `source` to compare the two halves of the account.
-- To take a post down, `delete_post` with `platform: true` removes a
-  published Markaestro post from its channels, and works on a native post's
-  id directly. Confirm with the user first: a platform delete cannot be
-  undone, and without `platform` a published post only leaves Markaestro.
-  Instagram and TikTok posts cannot be taken down by any app; a row's
-  `canTakeDown: false` says so, and the answer is to remove it in that
-  app, not to try.
+- Numbers look stale, or the user just posted: `refresh_analytics` pulls
+  live metrics from the platforms now. It is limited to a few calls a
+  minute; when `remaining` is above zero, a second call continues the window.
+- To take a published post down, the user does it in Markaestro or in the
+  platform's own app; agents cannot. `delete_post` only removes drafts and
+  posts that have not reached a platform.
 - `get_post_analytics_history` shows how one post earned its numbers (the
   1h to 90d snapshots with growth between them) and whether polling is still
   `active`. A post under 24 hours old is not yet comparable to older ones.
@@ -156,8 +175,8 @@ the user can change or cancel it in Markaestro or with `delete_post`.
   before calling `activate_evergreen_queue`.
 - `review_each_run` creates a draft occurrence for each run. It never
   auto-publishes. `approve_future_runs` creates ordinary scheduled posts.
-- Pause stops the queue and unschedules its pending occurrence. Archive is
-  permanent. Use `list_evergreen_runs` to report evaluation outcomes and
+- Pause stops the queue and unschedules its pending occurrence; resume
+  restarts it. Archiving is permanent and stays with the user in Markaestro. Use `list_evergreen_runs` to report evaluation outcomes and
   `get_evergreen_analytics` for lifetime metrics and attributed conversions.
 
 ## Errors

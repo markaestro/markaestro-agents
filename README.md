@@ -47,11 +47,15 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
 - The user scopes every connection at sign-in: one brand, or all brands in
   the workspace. A single-brand connection cannot reach any other brand; an
   all-brands connection names the brand on each post it creates.
+- Agents manage social media, not the account: no tool reaches account
+  settings, billing, team members, API keys, webhooks, or channel
+  connections, and none deletes a published post, takes one down from a
+  platform, or archives an Evergreen queue.
 - `create_post` saves a draft unless `scheduledAt` is set. `publish_post` is
   the only tool that publishes immediately; scheduling (`scheduledAt`,
   `bulk_posts`, activating an Evergreen queue) sets up future publishes. The
-  skill tells the agent to ask the user before `publish_post`, before
-  activating an Evergreen queue, and before deleting a post from a platform.
+  skill tells the agent to ask the user before `publish_post` and before
+  activating an Evergreen queue.
 - Every write tool is annotated `destructiveHint`, so clients that honor tool
   annotations, Claude among them, ask for confirmation before each call.
 - Connected agents are listed and revoked in Markaestro under Settings, API.

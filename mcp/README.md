@@ -20,20 +20,35 @@ report on one brand instead of the whole workspace.
 | --- | --- |
 | `list_products` | The brands this key can act on (one, or all in the workspace) and their connected channels |
 | `list_destinations` | Publishable destinations of the brand (pages, accounts) with ids |
+| `get_brand_profile` | A brand's description, voice, and visual identity (read-only) |
 | `list_posts`, `get_post` | Read posts by status, page through with `cursor` |
 | `create_post` | Save a draft, or schedule when `scheduledAt` is set |
+| `update_post` | Edit a draft or scheduled post: caption, media, one channel's settings, or its time |
 | `publish_post` | Queue an immediate publish; returns a job run |
-| `delete_post` | Delete a draft, cancel a scheduled post, or take a published or native post down from its platforms (`platform: true`) |
-| `bulk_posts` | Reschedule, delete, or restatus up to 25 posts |
+| `mark_post_posted` | Record that a person posted a manual-reminder or TikTok-inbox post |
+| `delete_post` | Delete a draft, or cancel a post before it reaches any platform; published posts are refused |
+| `bulk_posts` | Reschedule or restatus up to 25 posts |
 | `create_posts` | Up to 25 posts in one call, per-item results |
 | `upload_media` | Upload from a file path, URL, or data URL; returns the asset id |
 | `list_media`, `get_media` | Uploaded assets, processing state, reference counts |
 | `get_analytics` | Brand performance over a window: totals, channels, daily series, top posts, heatmap, insights. Covers posts published through Markaestro and posts published directly on the platform |
 | `list_post_analytics` | Every post in the window with its latest metrics and source, sortable by views, reach, engagements, or engagement rate |
 | `get_post_analytics_history` | The 1h to 90d metric snapshots of one post, with growth between stages |
+| `refresh_analytics` | Pull live metrics from the platforms now (a few calls a minute) |
+| `suggest_post_times` | The brand's best posting windows, learned from its own history |
 | `get_job_run`, `list_job_runs` | Follow a publish to succeeded or failed |
-| `list_webhook_endpoints`, `create_webhook_endpoint` | Webhook registration |
 | `get_channel_rules` | Per-channel media, caption, and delivery-mode rules |
+| `get_tiktok_posting_options` | The TikTok creator's live privacy levels and interaction options, needed for a Direct Post |
+
+The Evergreen tools (`preview_`, `create_`, `get_`, `list_`, `update_`,
+`activate_`, `pause_`, and `resume_evergreen_queue`, `list_evergreen_runs`,
+`get_evergreen_analytics`) manage proven recurring content.
+
+Agents manage social media and nothing else: account settings, billing,
+team, API keys, webhooks, and channel connections are not exposed, and no
+tool deletes a published post, takes one down from a platform, or archives
+an Evergreen queue. Those stay with the user in Markaestro. The REST API
+still offers deletes and webhooks to integrations holding a key.
 
 Also served: the `markaestro://channel-rules` resource and a `schedule_post`
 prompt that walks an agent through a safe scheduling flow.

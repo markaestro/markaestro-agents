@@ -51,23 +51,27 @@ instead of `targets`. Never send both.
 **`publish_post`** `{ postId }` → `{ run: { id, status, ... } }`
 Publishes now. Poll `get_job_run` with `run.id`.
 
-**`delete_post`** `{ postId, platform? }` → `{ deleted: true, id, source, platform: { channels, skipped } | false }`
-`platform: true` also takes a published Markaestro post down from every
-channel it went to (needs `posts.publish`); the record goes only once every
-live copy is gone, and a failure names the channel and what already went.
-A native post id (from `list_post_analytics`, `source: "native"`) is always
-taken down from the platform. Instagram and TikTok offer no delete to
-apps: they are never attempted, a takedown lists them under `skipped`
-with the copy still up, and a native post there answers `UNSUPPORTED`
-(400). Rows carry `canTakeDown`; do not offer a takedown when it is false.
-`PLATFORM_POST_NOT_FOUND` (404) means the platform no longer has it;
-`CONNECTION_AUTH_ERROR` (409) means reconnect.
-Cancels a scheduled post or removes a draft. A published post is only
-forgotten by Markaestro; the live copy stays on the platform.
+**`update_post`** `{ postId, caption?, mediaAssetIds?, settings?, scheduledAt? }` → `{ post }`
+Edits a draft or scheduled post; omitted fields keep their value.
+`mediaAssetIds` replaces the media. `settings` carries one channel's settings
+with `__type` naming that channel. `scheduledAt` only reschedules a post that
+is already scheduled. Errors: `VALIDATION_POST_NOT_EDITABLE` (published,
+publishing, or failed), `VALIDATION_POST_NOT_SCHEDULED` (scheduledAt on a
+draft), `VALIDATION_SETTINGS_CHANNEL_NOT_TARGETED`, plus any channel rule the
+new caption or media breaks.
+
+**`mark_post_posted`** `{ postId, externalUrl? }` → `{ post: { id, status: "published", externalId, externalUrl } }`
+Only for a post in `platform_action_required`, after the user confirms they
+posted it. Needs `posts.publish`.
+
+**`delete_post`** `{ postId }` → `{ deleted: true, id, ... }`
+Removes a draft, or cancels a scheduled, failed, or waiting-to-be-posted post.
+A published post is refused: taking posts down stays with the user in
+Markaestro.
 
 **`bulk_posts`**
 `{ ids: [...], action: "reschedule", scheduledAt }` or
-`{ ids, action: "delete" }` or `{ ids, action: "status", status: "draft" | "scheduled" }`
+`{ ids, action: "status", status: "draft" | "scheduled" }`
 → `{ succeeded: [ids], failed: [{ id, error }] }`
 
 ## Media
@@ -98,8 +102,8 @@ client from overwriting someone else's edit.
 
 **`activate_evergreen_queue`** schedules future occurrences. Confirm with the
 user first. **`pause_evergreen_queue`** unschedules the pending occurrence,
-**`resume_evergreen_queue`** computes a fresh next run, and
-**`archive_evergreen_queue`** ends the queue permanently.
+and **`resume_evergreen_queue`** computes a fresh next run. Archiving a queue
+is permanent and stays with the user in Markaestro.
 
 ## Analytics (needs the `analytics.read` scope)
 
@@ -111,7 +115,7 @@ how many posts each finding rests on. The account as a whole is counted:
 `source` is `markaestro` or `native` to narrow to one half, and
 `coverage.bySource` reports both counts.
 
-**`list_post_analytics`** `{ days?, since?, until?, channel?, source?, sort?, limit? }` → `{ window, sort, posts: [{ id, content, channels, publishedAt, externalUrl, contentType, source, canTakeDown, views, reach, likes, comments, shares, saves, clicks, engagements, erByReach, erByViews }], count, truncated }`
+**`list_post_analytics`** `{ days?, since?, until?, channel?, source?, sort?, limit? }` → `{ window, sort, posts: [{ id, content, channels, publishedAt, externalUrl, contentType, source, views, reach, likes, comments, shares, saves, clicks, engagements, erByReach, erByViews }], count, truncated }`
 `source` on a row is `markaestro` (went out through Markaestro) or `native`
 (published directly on the platform, discovered from the connected account).
 `sort` is `published_at` (default), `views`, `reach`, `engagements`, or
@@ -125,15 +129,25 @@ native post starts with `discovered`. Any id from the leaderboard or the
 list works, whichever source it came from.
 `NOT_FOUND` for a post outside this brand, a draft, or a sandbox post.
 
+**`refresh_analytics`** `{ days?, channel?, productId? }` → `{ refresh: { updated, remaining, followersUpdated, errorCount, firstError, refreshedAt, ... } }`
+Pulls live metrics from the platforms now. Limited to 4 calls a minute; when
+`remaining` is above zero, call again to continue the window.
+
+**`suggest_post_times`** `{ productId? }` → `{ bestTimes: { productId, objective, timing, readiness: { datedPosts, objectiveMeasured }, computedAt } }`
+The brand's best posting windows, learned from its own history. `timing` is
+null until there is enough history. Needs a plan with Intelligence.
+
+## Brands
+
+**`get_brand_profile`** `{ productId }` → `{ profile: { productId, name, description, url, categories, brandVoice, brandIdentity } }`
+Read-only. Use the voice when writing captions.
+
+**`get_tiktok_posting_options`** `{ productId? }` → `{ creatorInfo: { privacyLevelOptions, commentDisabled, duetDisabled, stitchDisabled, maxVideoPostDurationSec, creatorUsername, sandbox } }`
+Read right before a TikTok Direct Post and use one of `privacyLevelOptions`.
+Test keys get `sandbox: true`. Needs `posts.publish`.
+
 ## Publish runs
 
 **`get_job_run`** `{ runId }` → `{ run: { status: queued | running | succeeded | failed, message, details } }`
 
 **`list_job_runs`** `{ status?, resourceId? (a post id), limit?, cursor? }` → `{ runs: [...], nextCursor }`
-
-## Webhooks (needs the `webhooks.manage` scope)
-
-**`list_webhook_endpoints`** `{}` → `{ webhookEndpoints: [...] }`
-
-**`create_webhook_endpoint`** `{ url, events: ["post.published", ...] }` →
-`{ webhookEndpoint: { id, secret, ... } }`. The secret is shown once.
