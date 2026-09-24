@@ -97,10 +97,11 @@ point the user to Markaestro rather than looking for another way.
 
 ## Media
 
-- Upload first with `upload_media` (file path, URL, or data URL), then pass
-  the returned asset id in `mediaAssetIds`. Uploads count against the monthly
-  quota, so reuse an asset from `list_media` when the same file was uploaded
-  before.
+- Upload first with `upload_media` (a public URL or data URL; a file path
+  only with the local `@markaestro/mcp` package, since the hosted server
+  cannot read your disk), then pass the returned asset id in
+  `mediaAssetIds`. Uploads count against the monthly quota, so reuse an asset
+  from `list_media` when the same file was uploaded before.
 - Instagram, TikTok, and Pinterest require media. LinkedIn requires text.
   Video must be the only media item on LinkedIn and Pinterest.
 

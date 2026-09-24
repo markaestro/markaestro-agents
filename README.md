@@ -25,8 +25,12 @@ claude plugin marketplace add markaestro/markaestro-agents
 claude plugin install markaestro@markaestro
 ```
 
-**Claude, Cursor, ChatGPT, Grok, OpenClaw, Hermes, and other clients:** step
-by step instructions for each are at
+**Claude (claude.ai and Claude Desktop):** open Customize, Connectors, click
+Add custom connector, paste `https://markaestro.com/api/public/v1/mcp`, leave
+the OAuth client fields empty, and click Add. Click Connect to sign in.
+
+**Cursor, ChatGPT, Grok, OpenClaw, Hermes, and other clients:** step by step
+instructions for each are at
 [markaestro.com/developers/agents](https://markaestro.com/developers/agents).
 
 **Skill only**
@@ -41,6 +45,15 @@ from Settings, API Access):
 ```bash
 claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestro/mcp
 ```
+
+## Example prompts
+
+- "What did we post on Instagram last month, and which three posts got the
+  most engagement?"
+- "Draft a LinkedIn post announcing our new cold brew and schedule it for
+  Tuesday at 9am New York time. Don't publish anything else."
+- "When does our audience respond best? Put next week's three drafts in
+  those slots."
 
 ## Safety
 
@@ -78,8 +91,11 @@ and how to contact us. [Terms of Service](https://markaestro.com/terms).
 
 ## Support
 
-Open an issue in this repository, or contact support through
-[markaestro.com](https://markaestro.com).
+Email [support@markaestro.com](mailto:support@markaestro.com), use the
+[contact page](https://markaestro.com/contact), or open an issue in this
+repository. If a sign-in or tool call fails, include the `requestId` from the
+error; it lets support trace the call. Report security vulnerabilities
+privately to support@markaestro.com rather than in a public issue.
 
 ## License
 

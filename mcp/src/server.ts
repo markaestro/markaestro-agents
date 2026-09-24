@@ -24,7 +24,13 @@ export function clientFromEnv(env: Record<string, string | undefined> = process.
 }
 
 export function buildServer(client: MarkaestroClient, options: ServerOptions = {}): McpServer {
-  const server = new McpServer({ name: "markaestro", version: SERVER_VERSION }, {
+  const server = new McpServer({
+    name: "markaestro",
+    title: "Markaestro",
+    version: SERVER_VERSION,
+    websiteUrl: "https://markaestro.com/developers/agents",
+    icons: [{ src: "https://markaestro.com/android-chrome-512x512.png", mimeType: "image/png", sizes: ["512x512"] }],
+  }, {
     instructions: [
       "Markaestro schedules and publishes social posts. A connection covers one brand or every brand in its workspace.",
       "Start with list_products, then list_destinations when a channel needs a destinationId. If list_products returns several brands, pass productId when creating posts or Evergreen queues.",

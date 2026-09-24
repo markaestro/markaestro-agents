@@ -475,9 +475,13 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "upload_media",
       title: "Upload media",
-      description: "Upload an image or video from a local file path, an http(s) URL, or a data: URL. Returns the media asset; pass its id in create_post mediaAssetIds. Counts against the workspace's monthly upload quota.",
+      // The hosted endpoint cannot read the caller's disk, so it only offers
+      // what it can actually fetch; the stdio package also takes file paths.
+      description: client.readsLocalFiles
+        ? "Upload an image or video from a local file path, an http(s) URL, or a data: URL. Returns the media asset; pass its id in create_post mediaAssetIds. Counts against the workspace's monthly upload quota."
+        : "Upload an image or video from a public http(s) URL or a data: URL (this server cannot read file paths). Returns the media asset; pass its id in create_post mediaAssetIds. Counts against the workspace's monthly upload quota.",
       inputSchema: {
-        source: z.string().describe("Local file path, http(s) URL, or data: URL"),
+        source: z.string().describe(client.readsLocalFiles ? "Local file path, http(s) URL, or data: URL" : "Public http(s) URL or data: URL"),
         fileName: z.string().optional(),
         contentType: z.string().optional().describe("Inferred from the file extension or URL when omitted"),
       },

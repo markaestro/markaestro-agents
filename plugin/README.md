@@ -12,14 +12,24 @@ sign in, pick the workspace and brand the agent may act on, click Allow. To
 sign in again later, or switch brands, run `/mcp` and choose `markaestro`.
 
 The MCP server entry points at `https://markaestro.com/api/public/v1/mcp`
-with no credentials, so Claude Code uses OAuth. Set `MARKAESTRO_BASE_URL` to
-point a local build at another host. For headless use with a static key,
-register the server yourself instead:
+with no credentials, so Claude Code uses OAuth. The URL is fixed rather than
+read from an environment variable, so every host that loads the plugin
+reaches the same server. For headless use with a static key, or to point at
+a local build, register the server yourself instead:
 
 ```bash
 claude mcp add --transport http markaestro https://markaestro.com/api/public/v1/mcp \
   --header "Authorization: Bearer mk_live_..."
 ```
+
+## Example prompts
+
+- "What did we post on Instagram last month, and which three posts got the
+  most engagement?"
+- "Draft a LinkedIn post announcing our new cold brew and schedule it for
+  Tuesday at 9am New York time. Don't publish anything else."
+- "When does our audience respond best? Put next week's three drafts in
+  those slots."
 
 ## Other clients
 

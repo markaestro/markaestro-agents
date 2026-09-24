@@ -77,8 +77,10 @@ Markaestro.
 ## Media
 
 **`upload_media`** `{ source, fileName?, contentType? }` → `{ asset: { id, type, url, width, height, ... } }`
-`source` is a local path, an http(s) URL, or a `data:` URL. The type is
-inferred from the extension when `contentType` is omitted.
+`source` is a public http(s) URL or a `data:` URL; the local
+`@markaestro/mcp` package also takes a file path (the hosted server refuses
+one, because it cannot read the caller's disk). The type is inferred from the
+extension when `contentType` is omitted.
 
 **`list_media`** `{ type?: "image" | "video", limit?, cursor? }` → `{ assets: [...], nextCursor }`
 

@@ -2,7 +2,7 @@
   "mcpServers": {
     "markaestro": {
       "type": "http",
-      "url": "${MARKAESTRO_BASE_URL:-https://markaestro.com}/api/public/v1/mcp"
+      "url": "https://markaestro.com/api/public/v1/mcp"
     }
   }
 }

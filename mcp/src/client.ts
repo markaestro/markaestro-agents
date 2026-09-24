@@ -108,6 +108,11 @@ export class MarkaestroClient {
     return this.apiKey.startsWith("mk_test_");
   }
 
+  /** Whether `uploadMedia` accepts a local file path (false on the hosted endpoint). */
+  get readsLocalFiles(): boolean {
+    return this.allowLocalFiles;
+  }
+
   async request<T>(method: string, path: string, body?: unknown, query?: Query): Promise<T> {
     const url = new URL(this.baseUrl + path);
     for (const [key, value] of Object.entries(query ?? {})) {
