@@ -47,7 +47,7 @@ export function buildServer(client: MarkaestroClient, options: ServerOptions = {
         inputSchema: tool.inputSchema,
         annotations: {
           readOnlyHint: tool.readOnly,
-          destructiveHint: !tool.readOnly,
+          destructiveHint: !tool.readOnly && tool.destructive !== false,
           idempotentHint: tool.readOnly,
           openWorldHint: tool.openWorld ?? false,
         },

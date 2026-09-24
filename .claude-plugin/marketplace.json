@@ -12,7 +12,7 @@
       "name": "markaestro",
       "source": "./plugin",
       "description": "Schedule, publish, and review social posts through Markaestro.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "category": "productivity"
     }
   ]

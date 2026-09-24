@@ -30,12 +30,20 @@ export type ToolDefinition = {
   title: string;
   description: string;
   inputSchema: z.ZodRawShape;
-  /** Reads only. Every other tool changes data, so it is annotated destructive and Claude confirms each call. */
+  /** Reads only: fetches, lists, or computes without changing anything. */
   readOnly: boolean;
   /**
-   * Reaches past Markaestro's own records: posts or schedules to a social
-   * platform, fetches a caller-supplied URL, or sends data to one. Reads of
-   * the workspace stay closed-world.
+   * Required on every write. True when the tool can overwrite or remove
+   * something, or put content in public that cannot be pulled back by the
+   * agent (publish_post): edits, deletes, reschedules, unscheduling. False
+   * for purely additive writes, such as saving a draft or uploading media.
+   */
+  destructive?: boolean;
+  /**
+   * Can change publicly visible state on a social platform, now or at a
+   * scheduled time: publishing, scheduling, and anything that edits what a
+   * schedule will publish. Reading from a platform (analytics refresh, TikTok
+   * options) or fetching a URL into private storage is not open-world.
    */
   openWorld?: boolean;
   handler: (args: Record<string, unknown>) => Promise<unknown>;
@@ -130,6 +138,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         scheduledAt: isoDate.optional().describe("New time for a scheduled post"),
       },
       readOnly: false,
+      destructive: true,
       openWorld: true,
       handler: ({ postId, ...fields }) => {
         const body: Record<string, unknown> = {};
@@ -153,6 +162,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         settings: z.record(z.string(), z.unknown()).optional().describe("Platform settings for the single-channel form; __type must equal channel."),
       },
       readOnly: false,
+      destructive: false,
       openWorld: true,
       handler: async (args) => {
         const body: Record<string, unknown> = {};
@@ -175,6 +185,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Queue an immediate publish of a draft post. Returns a job run; poll get_job_run until status is succeeded or failed. For manual_reminder targets this queues a reminder for a person instead of calling the platform. Confirm with the user before publishing anything public.",
       inputSchema: { postId: z.string() },
       readOnly: false,
+      destructive: true,
       openWorld: true,
       handler: ({ postId }) => client.request("POST", `/api/public/v1/posts/${encodeURIComponent(String(postId))}/publish`),
     },
@@ -187,6 +198,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         externalUrl: z.string().url().optional().describe("Link to the live post, if the user has it"),
       },
       readOnly: false,
+      destructive: false,
       handler: ({ postId, externalUrl }) => client.request(
         "POST",
         `/api/public/v1/posts/${encodeURIComponent(String(postId))}/mark-posted`,
@@ -201,6 +213,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         postId: z.string().describe("A Markaestro post id"),
       },
       readOnly: false,
+      destructive: true,
       handler: async ({ postId }) => {
         const id = encodeURIComponent(String(postId));
         const { post } = await get<{ post: { status?: string } }>(`/api/public/v1/posts/${id}`);
@@ -221,6 +234,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         status: z.enum(["draft", "scheduled"]).optional().describe("Required for the status action"),
       },
       readOnly: false,
+      destructive: true,
       openWorld: true,
       handler: ({ ids, action, scheduledAt, status }) => {
         const body: Record<string, unknown> = { ids, action };
@@ -247,6 +261,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         })).min(1).max(25),
       },
       readOnly: false,
+      destructive: false,
       openWorld: true,
       handler: async ({ posts }) => {
         const items = (posts as Array<Record<string, unknown>>).map((item) => {
@@ -300,6 +315,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         variants: z.array(z.object({ caption: z.string().min(1).max(63206), enabled: z.boolean().default(true) })).min(1).max(20),
       },
       readOnly: false,
+      destructive: false,
       handler: (args) => client.request("POST", "/api/public/v1/evergreen-queues", args),
     },
     {
@@ -320,6 +336,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         variants: z.array(z.object({ caption: z.string().min(1).max(63206), enabled: z.boolean().default(true) })).min(1).max(20).optional(),
       },
       readOnly: false,
+      destructive: true,
       openWorld: true,
       handler: ({ queueId, ...body }) => client.request("PATCH", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}`, body),
     },
@@ -329,6 +346,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Activate a draft or paused queue. This schedules future public posts, so confirm with the user first.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
+      destructive: false,
       openWorld: true,
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/activate`),
     },
@@ -338,6 +356,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Pause a queue and unschedule any pending occurrence generated by it.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
+      destructive: true,
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/pause`),
     },
     {
@@ -346,6 +365,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Resume a paused queue and compute its next occurrence from the current time.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
+      destructive: false,
       openWorld: true,
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/resume`),
     },
@@ -433,7 +453,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         productId: z.string().optional().describe("One brand, on an all-brands connection"),
       },
       readOnly: false,
-      openWorld: true,
+      destructive: false,
       handler: ({ days, channel: ch, productId }) => {
         const body: Record<string, unknown> = {};
         if (days !== undefined) body.days = days;
@@ -462,7 +482,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         contentType: z.string().optional().describe("Inferred from the file extension or URL when omitted"),
       },
       readOnly: false,
-      openWorld: true,
+      destructive: false,
       handler: ({ source, fileName, contentType }) => client.uploadMedia({
         source: String(source),
         fileName: fileName as string | undefined,
@@ -535,7 +555,6 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         productId: z.string().optional().describe("On an all-brands connection, the brand whose TikTok account to ask about"),
       },
       readOnly: true,
-      openWorld: true,
       handler: ({ productId }) => get("/api/public/v1/tiktok/creator-info", { productId: productId as string | undefined }),
     },
   ];

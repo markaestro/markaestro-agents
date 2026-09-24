@@ -58,8 +58,13 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
   `bulk_posts`, activating an Evergreen queue) sets up future publishes. The
   skill tells the agent to ask the user before `publish_post` and before
   activating an Evergreen queue.
-- Every write tool is annotated `destructiveHint`, so clients that honor tool
-  annotations, Claude among them, ask for confirmation before each call.
+- Every tool declares `readOnlyHint`, `destructiveHint`, and `openWorldHint`
+  explicitly, set from what it does: `destructiveHint` on tools that edit,
+  remove, unschedule, or publish (`update_post`, `delete_post`, `bulk_posts`,
+  `publish_post`, `update_evergreen_queue`, `pause_evergreen_queue`), and
+  `openWorldHint` on tools that can change what appears on a platform, now or
+  on a schedule. Clients that honor annotations, Claude among them, ask for
+  confirmation before writes.
 - Connected agents are listed and revoked in Markaestro under Settings, API.
 
 ## Privacy Policy
