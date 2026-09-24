@@ -33,10 +33,17 @@ the OAuth client fields empty, and click Add. Click Connect to sign in.
 instructions for each are at
 [markaestro.com/developers/agents](https://markaestro.com/developers/agents).
 
-**Skill only**
+**Skill only** (Claude Code, Cursor, Codex, Copilot, Gemini, and other agents
+that read skills; listed on [skills.sh](https://skills.sh/markaestro/markaestro-agents/markaestro)):
 
 ```bash
 npx skills add markaestro/markaestro-agents
+```
+
+**OpenClaw** (listed on [ClawHub](https://clawhub.ai/markaestro/skills/markaestro)):
+
+```bash
+clawhub install markaestro
 ```
 
 **Local package** (reads media from your own disk; needs a workspace API key
