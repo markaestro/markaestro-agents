@@ -52,6 +52,9 @@ export function buildServer(client: MarkaestroClient, options: ServerOptions = {
         description: tool.description,
         inputSchema: tool.inputSchema,
         annotations: {
+          // Directory listings read the display name from annotations.title;
+          // other clients read the tool's own title. Both carry the same text.
+          title: tool.title,
           readOnlyHint: tool.readOnly,
           destructiveHint: !tool.readOnly && tool.destructive !== false,
           idempotentHint: tool.readOnly,

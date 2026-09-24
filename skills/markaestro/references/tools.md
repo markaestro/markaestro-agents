@@ -103,7 +103,9 @@ metrics remain `null`.
 client from overwriting someone else's edit.
 
 **`activate_evergreen_queue`** schedules future occurrences. Confirm with the
-user first. **`pause_evergreen_queue`** unschedules the pending occurrence,
+user first. It needs the user's caption confirmation, recorded with
+`contentConfirmed: true` on create or update; without it the call answers
+`EVERGREEN_CONTENT_REVIEW_REQUIRED`. **`pause_evergreen_queue`** unschedules the pending occurrence,
 and **`resume_evergreen_queue`** computes a fresh next run. Archiving a queue
 is permanent and stays with the user in Markaestro.
 

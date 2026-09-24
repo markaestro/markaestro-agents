@@ -1,6 +1,6 @@
 {
   "name": "@markaestro/mcp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "mcpName": "com.markaestro/mcp",
   "description": "Model Context Protocol server that lets AI agents schedule, publish, and review Markaestro posts through the public API",
   "license": "MIT",

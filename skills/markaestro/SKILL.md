@@ -173,7 +173,10 @@ publishes.
   measured eligibility and a recommended cadence without writing anything.
 - `create_evergreen_queue` creates a draft policy. It does not schedule posts.
 - Ask the user to confirm the cadence, channels, variants, and review policy
-  before calling `activate_evergreen_queue`.
+  before calling `activate_evergreen_queue`. Show every caption variant and,
+  once the user confirms they are accurate, pass `contentConfirmed: true` on
+  `create_evergreen_queue` or `update_evergreen_queue`. Activation and resuming
+  answer `EVERGREEN_CONTENT_REVIEW_REQUIRED` until that confirmation exists.
 - `review_each_run` creates a draft occurrence for each run. It never
   auto-publishes. `approve_future_runs` creates ordinary scheduled posts.
 - Pause stops the queue and unschedules its pending occurrence; resume

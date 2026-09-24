@@ -1,6 +1,6 @@
 {
   "name": "markaestro",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Schedule, publish, and review social posts through Markaestro from any AI agent: the markaestro skill plus the hosted MCP server.",
   "author": {
     "name": "Aethos Solutions LLC",
