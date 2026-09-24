@@ -38,7 +38,7 @@
     "url": "git+https://github.com/markaestro/markaestro-agents.git",
     "directory": "mcp"
   },
-  "homepage": "https://markaestro.com/docs",
+  "homepage": "https://markaestro.com/developers/agents",
   "bugs": {
     "url": "https://github.com/markaestro/markaestro-agents/issues"
   },
