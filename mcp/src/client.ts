@@ -44,6 +44,13 @@ export class MarkaestroApiError extends Error {
 
 export type ClientOptions = {
   apiKey: string;
+  /**
+   * When set, the client has no key: construction succeeds and every request
+   * fails with this message. Lets the stdio server start and answer
+   * introspection (tools/list) before a key is configured, which directory
+   * health checks rely on.
+   */
+  unconfiguredMessage?: string;
   baseUrl?: string;
   maxRetries?: number;
   fetch?: typeof fetch;
@@ -89,9 +96,11 @@ export class MarkaestroClient {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly allowLocalFiles: boolean;
   private readonly downloadUrl: (url: string) => Promise<Response>;
+  private readonly unconfiguredMessage: string | null;
 
   constructor(options: ClientOptions) {
-    if (!/^mk_(live|test)_/.test(options.apiKey ?? "")) {
+    this.unconfiguredMessage = options.unconfiguredMessage ?? null;
+    if (!this.unconfiguredMessage && !/^mk_(live|test)_/.test(options.apiKey ?? "")) {
       throw new Error("MARKAESTRO_API_KEY must be an mk_live_ or mk_test_ key from Settings > API Access");
     }
     this.apiKey = options.apiKey;
@@ -113,7 +122,13 @@ export class MarkaestroClient {
     return this.allowLocalFiles;
   }
 
+  /** False when the client was built without a key (see `unconfiguredMessage`). */
+  get isConfigured(): boolean {
+    return this.unconfiguredMessage === null;
+  }
+
   async request<T>(method: string, path: string, body?: unknown, query?: Query): Promise<T> {
+    if (this.unconfiguredMessage) throw new Error(this.unconfiguredMessage);
     const url = new URL(this.baseUrl + path);
     for (const [key, value] of Object.entries(query ?? {})) {
       if (value !== undefined && value !== "") url.searchParams.set(key, String(value));

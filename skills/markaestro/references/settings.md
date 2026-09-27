@@ -31,7 +31,7 @@ otherwise `VALIDATION_SCHEDULED_DELIVERY_MODE_REQUIRED`.
 | instagram | required, up to 10 items | 2,200 | single video becomes a Reel; stories take one item |
 | tiktok | required, 1 video or up to 35 images | 2,200 | inbox handoff by default; direct post needs `privacyLevel` |
 | threads | optional, up to 20 items | 500 | |
-| pinterest | required, up to 5 images or exactly 1 video | 500 | a video pin carries no other media |
+| pinterest | required, up to 5 images or exactly 1 video | 800 | a video pin carries no other media |
 | linkedin | optional, up to 20 items; a video must be alone | 3,000 | text required |
 | x | optional, up to 4 images or exactly 1 video | 280 | images and video cannot be mixed |
 

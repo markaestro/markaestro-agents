@@ -23,6 +23,20 @@ export function clientFromEnv(env: Record<string, string | undefined> = process.
   return new MarkaestroClient({ apiKey, baseUrl: env.MARKAESTRO_BASE_URL || DEFAULT_BASE_URL });
 }
 
+/**
+ * Like clientFromEnv, but without a key it returns a client whose every call
+ * fails with the setup message, so the server can still start and list its
+ * tools. The stdio entry point uses this; a bad (non-empty) key still throws.
+ */
+export function clientFromEnvOrUnconfigured(env: Record<string, string | undefined> = process.env): MarkaestroClient {
+  if (env.MARKAESTRO_API_KEY) return clientFromEnv(env);
+  return new MarkaestroClient({
+    apiKey: "",
+    baseUrl: env.MARKAESTRO_BASE_URL || DEFAULT_BASE_URL,
+    unconfiguredMessage: "Set MARKAESTRO_API_KEY to a workspace API key (Settings > API Access in Markaestro), or connect to the hosted server https://markaestro.com/api/public/v1/mcp, which signs in through the browser.",
+  });
+}
+
 export function buildServer(client: MarkaestroClient, options: ServerOptions = {}): McpServer {
   const server = new McpServer({
     name: "markaestro",

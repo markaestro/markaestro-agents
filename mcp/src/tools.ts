@@ -58,7 +58,7 @@ export const CHANNEL_RULES = `Markaestro channel rules (one post targets one or 
 - pinterest: media required; up to 5 images or exactly 1 video.
 - linkedin: text required; images or 1 video, up to 20 items.
 - x: text, up to 4 images, or 1 video; images and video cannot be mixed.
-Caption limits: facebook 63206, linkedin 3000, instagram 2200, tiktok 2200, pinterest 500, threads 500, x 280.
+Caption limits: facebook 63206, linkedin 3000, instagram 2200, tiktok 2200, pinterest 800, threads 500, x 280.
 Media: image/png, image/jpeg, image/webp, image/gif up to 10 MB; video/mp4, video/quicktime, video/webm up to 250 MB.
 Posting model: create_post stores a draft unless scheduledAt is set (then the worker publishes at that time). publish_post queues an immediate publish and returns a job run to poll with get_job_run.
 A connection covers either one brand (product) or every brand in the workspace, chosen when it was created. On an all-brands connection, pass productId to create_post, create_posts, list_posts, and create_evergreen_queue.`;

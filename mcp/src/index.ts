@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { buildServer, clientFromEnv, serverOptionsFromEnv } from "./server";
+import { buildServer, clientFromEnvOrUnconfigured, serverOptionsFromEnv } from "./server";
 
 async function main() {
-  const client = clientFromEnv();
+  const client = clientFromEnvOrUnconfigured();
   const options = serverOptionsFromEnv();
   const server = buildServer(client, options);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // stdout is the protocol channel; anything human goes to stderr.
-  process.stderr.write(`markaestro-mcp ready (${client.isTestKey ? "test" : "live"} key, ${client.baseUrl}${options.readOnly ? ", read-only" : ""})\n`);
+  process.stderr.write(`markaestro-mcp ready (${client.isConfigured ? (client.isTestKey ? "test key" : "live key") : "no MARKAESTRO_API_KEY set; tool calls will ask for one"}, ${client.baseUrl}${options.readOnly ? ", read-only" : ""})\n`);
 }
 
 main().catch((error) => {
