@@ -14,5 +14,11 @@
     "social-media",
     "scheduling",
     "mcp"
-  ]
+  ],
+  "displayName": "Markaestro",
+  "icon": ".claude-plugin/icon.png",
+  "privacyPolicyUrl": "https://markaestro.com/privacy",
+  "supportUrl": "https://markaestro.com/contact",
+  "documentationUrl": "https://markaestro.com/developers/agents",
+  "termsOfServiceUrl": "https://markaestro.com/terms"
 }
