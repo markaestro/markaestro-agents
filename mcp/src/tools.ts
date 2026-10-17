@@ -34,16 +34,18 @@ export type ToolDefinition = {
   readOnly: boolean;
   /**
    * Required on every write. True when the tool can overwrite or remove
-   * something, or put content in public that cannot be pulled back by the
-   * agent (publish_post): edits, deletes, reschedules, unscheduling. False
-   * for purely additive writes, such as saving a draft or uploading media.
+   * something, or send content to a public platform now or on a schedule
+   * (publish_post, scheduling create_post, activating a queue): edits,
+   * deletes, reschedules, unscheduling, status overwrites. False only for
+   * purely additive writes, such as a draft queue, uploaded media, or stored
+   * metrics. Being able to undo an action does not make it non-destructive.
    */
   destructive?: boolean;
   /**
-   * Can change publicly visible state on a social platform, now or at a
-   * scheduled time: publishing, scheduling, and anything that edits what a
-   * schedule will publish. Reading from a platform (analytics refresh, TikTok
-   * options) or fetching a URL into private storage is not open-world.
+   * Accesses the public internet or open-ended external entities, including
+   * fetching arbitrary URLs and publishing or scheduling social posts.
+   * Reads limited to the user's connected private accounts (analytics refresh,
+   * TikTok options) remain bounded even when the service is externally hosted.
    */
   openWorld?: boolean;
   handler: (args: Record<string, unknown>) => Promise<unknown>;
@@ -162,7 +164,8 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         settings: z.record(z.string(), z.unknown()).optional().describe("Platform settings for the single-channel form; __type must equal channel."),
       },
       readOnly: false,
-      destructive: false,
+      // With scheduledAt the worker later publishes it publicly without another call.
+      destructive: true,
       openWorld: true,
       handler: async (args) => {
         const body: Record<string, unknown> = {};
@@ -198,7 +201,9 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         externalUrl: z.string().url().optional().describe("Link to the live post, if the user has it"),
       },
       readOnly: false,
-      destructive: false,
+      // Overwrites the post's status to published; agents cannot set it back.
+      destructive: true,
+      openWorld: false,
       handler: ({ postId, externalUrl }) => client.request(
         "POST",
         `/api/public/v1/posts/${encodeURIComponent(String(postId))}/mark-posted`,
@@ -261,7 +266,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
         })).min(1).max(25),
       },
       readOnly: false,
-      destructive: false,
+      destructive: true,
       openWorld: true,
       handler: async ({ posts }) => {
         const items = (posts as Array<Record<string, unknown>>).map((item) => {
@@ -348,7 +353,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Activate a draft or paused queue. This schedules future public posts. The user must have confirmed the caption variants (contentConfirmed on create_evergreen_queue or update_evergreen_queue); otherwise this answers EVERGREEN_CONTENT_REVIEW_REQUIRED.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
-      destructive: false,
+      destructive: true,
       openWorld: true,
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/activate`),
     },
@@ -367,7 +372,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       description: "Resume a paused queue and compute its next occurrence from the current time.",
       inputSchema: { queueId: z.string() },
       readOnly: false,
-      destructive: false,
+      destructive: true,
       openWorld: true,
       handler: ({ queueId }) => client.request("POST", `/api/public/v1/evergreen-queues/${encodeURIComponent(String(queueId))}/resume`),
     },
@@ -448,7 +453,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "refresh_analytics",
       title: "Refresh analytics from the platforms",
-      description: "Pull live metrics from the platforms now instead of waiting for the next scheduled poll: posts in the window (optionally one channel, or one brand on an all-brands connection) and today's follower counts. The answer says how many posts were updated and how many remain, since a large window may take more than one refresh. Limited to a few calls a minute.",
+      description: "Refresh stored analytics only for the user's authorized brands and their already connected social accounts. Reads their post metrics and follower counts through those account integrations and stores the results in the private Markaestro workspace. Cannot query arbitrary accounts, URLs, or public search, and does not publish or change social posts. Covers posts in the window (optionally one channel or one authorized brand) and today's follower counts. The answer says how many posts were updated and how many remain; a large window may take more than one refresh. Limited to a few calls a minute.",
       inputSchema: {
         days: z.number().int().min(1).max(90).optional().describe("Window ending now; default 28"),
         channel: channel.optional(),
@@ -489,6 +494,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
       },
       readOnly: false,
       destructive: false,
+      openWorld: true,
       handler: ({ source, fileName, contentType }) => client.uploadMedia({
         source: String(source),
         fileName: fileName as string | undefined,
@@ -556,7 +562,7 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "get_tiktok_posting_options",
       title: "Get TikTok posting options",
-      description: "The connected TikTok creator's live posting options: allowed privacy levels, whether comments, duets, and stitches can be enabled, and the longest video. TikTok requires a Direct Post to use these, so read them right before building one and pass the chosen privacyLevel in the tiktok settings. Test keys get a sandbox answer.",
+      description: "Read posting options only for the user's already connected TikTok creator account: allowed privacy levels, whether comments, duets, and stitches can be enabled, and the longest video. Does not publish, change settings, or query arbitrary creators or URLs. TikTok requires a Direct Post to use these, so read them right before building one and pass the chosen privacyLevel in the tiktok settings. Test keys get a sandbox answer without contacting TikTok.",
       inputSchema: {
         productId: z.string().optional().describe("On an all-brands connection, the brand whose TikTok account to ask about"),
       },

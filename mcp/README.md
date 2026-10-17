@@ -160,12 +160,16 @@ claude plugin install markaestro@markaestro
 
 ## Deploying
 
+Maintainers: the full release runbook (every surface, the version files, and the exact
+commands) is `docs/operations/mcp-release.md` in the Markaestro app repository. Summary:
+
 | Surface | How it ships |
 | --- | --- |
 | Hosted MCP (`/api/public/v1/mcp`) | Part of the Next.js app; deploys on push to `main` like every route |
 | `@markaestro/mcp` on npm | `cd mcp && npm version <x.y.z> && npm publish` (public scoped package; `prepublishOnly` builds). Bump `src/version.ts` with it |
 | Plugin and skill | Mirrored to the public repo `markaestro/markaestro-agents` with `node scripts/sync-agents-repo.mjs <clone>`, then pushed there; `claude plugin marketplace add markaestro/markaestro-agents` reads it. The skill alone can be copied to `~/.claude/skills/markaestro` |
 | MCP Registry (`com.markaestro/mcp`) | After the npm publish of the same version: `mcp-publisher login http --domain markaestro.com --private-key <hex>` then `mcp-publisher publish` from `mcp/`. The public key is served at `/.well-known/mcp-registry-auth` |
+| Glama (`markaestro/markaestro-agents`) | Admin, Dockerfile: build step `npm install -g @markaestro/mcp@<version>`, CMD `markaestro-mcp`; Build, then Create Release |
 
 ## Development
 
