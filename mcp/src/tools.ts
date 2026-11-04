@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { MarkaestroApiError, type MarkaestroClient } from "./client";
 
-export const CHANNELS = ["facebook", "instagram", "tiktok", "threads", "pinterest", "linkedin", "x"] as const;
+export const CHANNELS = ["facebook", "instagram", "tiktok", "threads", "pinterest", "linkedin", "x", "youtube"] as const;
 export const DELIVERY_MODES = ["direct_publish", "platform_inbox", "manual_reminder"] as const;
 
 const channel = z.enum(CHANNELS);
@@ -22,7 +22,7 @@ const target = z.object({
   channel,
   destinationId: z.string().optional().describe("Needed only when the brand has more than one destination for this channel; see list_destinations."),
   deliveryMode: deliveryMode.optional(),
-  settings: z.record(z.string(), z.unknown()).optional().describe("Platform settings with __type equal to the channel (instagram: postType, collaborators, altText; tiktok: postMode, privacyLevel, ...)."),
+  settings: z.record(z.string(), z.unknown()).optional().describe("Platform settings with __type equal to the channel (instagram: postType, collaborators, altText; tiktok: postMode, privacyLevel; youtube: title, privacyStatus, madeForKids; ...)."),
 });
 
 export type ToolDefinition = {
@@ -37,8 +37,8 @@ export type ToolDefinition = {
    * something, or send content to a public platform now or on a schedule
    * (publish_post, scheduling create_post, activating a queue): edits,
    * deletes, reschedules, unscheduling, status overwrites. False only for
-   * purely additive writes, such as a draft queue, uploaded media, or stored
-   * metrics. Being able to undo an action does not make it non-destructive.
+   * purely additive writes, such as a draft queue or uploaded media. Being
+   * able to undo an action does not make it non-destructive.
    */
   destructive?: boolean;
   /**
@@ -60,7 +60,8 @@ export const CHANNEL_RULES = `Markaestro channel rules (one post targets one or 
 - pinterest: media required; up to 5 images or exactly 1 video.
 - linkedin: text required; images or 1 video, up to 20 items.
 - x: text, up to 4 images, or 1 video; images and video cannot be mixed.
-Caption limits: facebook 63206, linkedin 3000, instagram 2200, tiktok 2200, pinterest 800, threads 500, x 280.
+- youtube: exactly 1 video. The first caption line becomes the title (max 100 characters) unless settings.title is set; the caption is the description. settings.privacyStatus is public (default), unlisted, or private; settings.madeForKids declares the audience (unset uses the channel default). YouTube makes a vertical or square video of 3 minutes or less a Short.
+Caption limits: facebook 63206, linkedin 3000, instagram 2200, tiktok 2200, pinterest 800, threads 500, x 280, youtube 5000.
 Media: image/png, image/jpeg, image/webp, image/gif up to 10 MB; video/mp4, video/quicktime, video/webm up to 250 MB.
 Posting model: create_post stores a draft unless scheduledAt is set (then the worker publishes at that time). publish_post queues an immediate publish and returns a job run to poll with get_job_run.
 A connection covers either one brand (product) or every brand in the workspace, chosen when it was created. On an all-brands connection, pass productId to create_post, create_posts, list_posts, and create_evergreen_queue.`;
@@ -453,14 +454,15 @@ export function createTools(client: MarkaestroClient): ToolDefinition[] {
     {
       name: "refresh_analytics",
       title: "Refresh analytics from the platforms",
-      description: "Refresh stored analytics only for the user's authorized brands and their already connected social accounts. Reads their post metrics and follower counts through those account integrations and stores the results in the private Markaestro workspace. Cannot query arbitrary accounts, URLs, or public search, and does not publish or change social posts. Covers posts in the window (optionally one channel or one authorized brand) and today's follower counts. The answer says how many posts were updated and how many remain; a large window may take more than one refresh. Limited to a few calls a minute.",
+      description: "Refresh stored analytics only for the user's authorized brands and their already connected social accounts. Reads their post metrics and follower counts through those account integrations and stores the results in the private Markaestro workspace, replacing each post's latest stored reading (readings from earlier stages are kept). Cannot query arbitrary accounts, URLs, or public search, and does not publish or change social posts. Covers posts in the window (optionally one channel or one authorized brand) and today's follower counts. The answer says how many posts were updated and how many remain; a large window may take more than one refresh. Limited to a few calls a minute.",
       inputSchema: {
         days: z.number().int().min(1).max(90).optional().describe("Window ending now; default 28"),
         channel: channel.optional(),
         productId: z.string().optional().describe("One brand, on an all-brands connection"),
       },
       readOnly: false,
-      destructive: false,
+      // Replaces each post's latest stored reading, so it is not a purely additive write.
+      destructive: true,
       handler: ({ days, channel: ch, productId }) => {
         const body: Record<string, unknown> = {};
         if (days !== undefined) body.days = days;

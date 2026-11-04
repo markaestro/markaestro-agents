@@ -2,7 +2,7 @@
 
 Official agent tooling for [Markaestro](https://markaestro.com), the social
 publishing workspace. Agents schedule, publish, and review posts on Facebook,
-Instagram, TikTok, Threads, Pinterest, LinkedIn, and X, read brand and
+Instagram, TikTok, Threads, Pinterest, LinkedIn, X, and YouTube, read brand and
 per-post analytics, and manage Intelligent Evergreen queues.
 
 | Folder | What it is |
@@ -80,9 +80,9 @@ claude mcp add markaestro -e MARKAESTRO_API_KEY=mk_live_... -- npx -y @markaestr
   activating an Evergreen queue.
 - Every tool declares `readOnlyHint`, `destructiveHint`, and `openWorldHint`
   explicitly, set from what it does: `destructiveHint` on every write except
-  the purely additive ones (`create_evergreen_queue`, `refresh_analytics`,
-  `upload_media`), because the rest edit, remove, unschedule, overwrite a
-  status, or send to a platform now or on a schedule, and
+  the purely additive ones (`create_evergreen_queue`, `upload_media`), because
+  the rest edit, remove, unschedule, overwrite stored data or a status, or send
+  to a platform now or on a schedule, and
   `openWorldHint` on tools that can change what appears on a platform, now or
   on a schedule. Clients that honor annotations, Claude among them, ask for
   confirmation before writes.

@@ -1,2 +1,2 @@
 /** Single source for the package version; bump with package.json on release. */
-export const VERSION = "0.3.4";
+export const VERSION = "0.4.0";

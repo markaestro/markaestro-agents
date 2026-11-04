@@ -1,6 +1,6 @@
 ---
 name: markaestro
-description: Schedule, publish, and review social posts through Markaestro (Facebook, Instagram, TikTok, Threads, Pinterest, LinkedIn, X), read brand and per-post analytics, and manage Intelligent Evergreen queues using its MCP server or public API. Use when a task mentions Markaestro, posting or scheduling to a connected social account, uploading media for a post, checking whether a post published or how it performed, reporting on social performance, deciding what or when to post next, batch-scheduling or editing scheduled content, refreshing analytics, finding the best time to post, writing in a brand's voice, or managing proven recurring content.
+description: Schedule, publish, and review social posts through Markaestro (Facebook, Instagram, TikTok, Threads, Pinterest, LinkedIn, X, YouTube), read brand and per-post analytics, and manage Intelligent Evergreen queues using its MCP server or public API. Use when a task mentions Markaestro, posting or scheduling to a connected social account, uploading media for a post, checking whether a post published or how it performed, reporting on social performance, deciding what or when to post next, batch-scheduling or editing scheduled content, refreshing analytics, finding the best time to post, writing in a brand's voice, or managing proven recurring content.
 ---
 
 # Working with Markaestro
@@ -70,7 +70,7 @@ Read those when you need an exact field name.
 - Facebook, Instagram, and TikTok require an explicit `deliveryMode` when
   scheduling: `direct_publish` to post through the platform API, or
   `manual_reminder` for a timed reminder the user posts by hand. Threads,
-  Pinterest, LinkedIn, and X default to `direct_publish`.
+  Pinterest, LinkedIn, X, and YouTube default to `direct_publish`.
 - One post, several channels: pass `targets` (one entry per channel) instead
   of `channel`. Each target can carry its own `destinationId` and
   `deliveryMode`. Platform `settings` may ride on one target only.
@@ -103,7 +103,9 @@ point the user to Markaestro rather than looking for another way.
   `mediaAssetIds`. Uploads count against the monthly quota, so reuse an asset
   from `list_media` when the same file was uploaded before.
 - Instagram, TikTok, and Pinterest require media. LinkedIn requires text.
-  Video must be the only media item on LinkedIn and Pinterest.
+  Video must be the only media item on LinkedIn and Pinterest. YouTube takes
+  exactly one video; a vertical or square video of 3 minutes or less becomes
+  a Short on YouTube's side.
 
 ## A safe scheduling flow
 

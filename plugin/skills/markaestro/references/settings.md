@@ -4,7 +4,7 @@
 
 | Mode | Meaning | Default on |
 | --- | --- | --- |
-| `direct_publish` | Markaestro calls the platform API at publish time | threads, pinterest, linkedin, x |
+| `direct_publish` | Markaestro calls the platform API at publish time | threads, pinterest, linkedin, x, youtube |
 | `manual_reminder` | No platform call. The post becomes `platform_action_required` and a person posts it natively from the reminder queue | facebook, instagram, tiktok |
 | `platform_inbox` | TikTok only: the post is handed to the creator's TikTok inbox to finish inside the app | n/a |
 
@@ -34,6 +34,7 @@ otherwise `VALIDATION_SCHEDULED_DELIVERY_MODE_REQUIRED`.
 | pinterest | required, up to 5 images or exactly 1 video | 800 | a video pin carries no other media |
 | linkedin | optional, up to 20 items; a video must be alone | 3,000 | text required |
 | x | optional, up to 4 images or exactly 1 video | 280 | images and video cannot be mixed |
+| youtube | required, exactly 1 video | 5,000 | first caption line is the title (100 characters) unless `settings.title` is set; vertical or square videos of 3 minutes or less become Shorts |
 
 Accepted uploads: `image/png`, `image/jpeg`, `image/webp`, `image/gif` up to
 10 MB; `video/mp4`, `video/quicktime`, `video/webm` up to 250 MB.
@@ -65,3 +66,11 @@ toggles.
 ```json
 { "__type": "x", "replySettings": "following" | "mentionedUsers" | "subscribers" | "verified" }
 ```
+
+**youtube**
+```json
+{ "__type": "youtube", "title": "Up to 100 characters",
+  "privacyStatus": "public" | "unlisted" | "private", "madeForKids": false }
+```
+`privacyStatus` defaults to `public`. Leave `madeForKids` out to keep the
+channel's own audience setting.
